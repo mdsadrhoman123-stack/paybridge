@@ -1,3 +1,8 @@
+<div align="center">
+  <img src="assets/banner.svg" width="100%" alt="💳 PayBridge — Shopify-to-Stripe Reconciliation — banner"/>
+</div>
+
+
 # 💳 PayBridge — Shopify-to-Stripe Reconciliation
 > Automated financial reconciliation — matches Shopify orders against Stripe payouts.
 
