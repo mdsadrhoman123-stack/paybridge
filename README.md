@@ -15,6 +15,12 @@
 <!-- Interactive Architecture Diagram -->
 [View Interactive Architecture Diagram](https://raw.githubusercontent.com/mdsadrhoman123-stack/paybridge/main/assets/diagrams/finance-interactive.html)
 
+<!-- Portfolio Navigation -->
+<script src="https://raw.githubusercontent.com/mdsadrhoman123-stack/paybridge/main/assets/navigation/navigation.js"></script>
+<script>
+autoInjectNavigation('paybridge');
+</script>
+
 ---
 
 ## Contents
