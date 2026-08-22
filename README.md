@@ -125,33 +125,33 @@ flowchart TD
 ### BEFORE (Manual Reconciliation - High Risk)
 ```
 [Shopify CSV Export] 
-    ↓ (manual download)
+    â†“ (manual download)
 [Stripe CSV Export] 
-    ↓ (manual download)
+    â†“ (manual download)
 [Manual Cross-Check] 
-    ↓ (error-prone)
+    â†“ (error-prone)
 [FX Calculations] 
-    ↓ (complex manual work)
+    â†“ (complex manual work)
 [Fee Reconciliation] 
-    ↓
-= **Days of work, high error risk, missed revenue possible** ❌
+    â†“
+= **Days of work, high error risk, missed revenue possible** âŒ
 ```
 
 ### AFTER (Automated Reconciliation - Accurate)
 ```
 [Shopify API Data] 
-    ↓ (automated fetch)
+    â†“ (automated fetch)
 [Stripe API Data] 
-    ↓ (automated fetch)
+    â†“ (automated fetch)
 [FX Normalization] 
-    ↓ (automated calculation)
+    â†“ (automated calculation)
 [Tolerance Matching] 
-    ↓ (intelligent comparison)
+    â†“ (intelligent comparison)
 [Discrepancy Detection] 
-    ↓ (automated alerts)
+    â†“ (automated alerts)
 [Append-only Ledger] 
-    ↓
-= **Instant reconciliation, zero double-counting, revenue protected** ✅
+    â†“
+= **Instant reconciliation, zero double-counting, revenue protected** âœ…
 ```
 
 **The difference:** Automated financial reconciliation with guaranteed integrity and immediate discrepancy detection.
@@ -265,14 +265,14 @@ A: Yes, PostgreSQL ledger is designed as append-only for immutable audit trail.
 
 **K MD SAYAD RAHMAN** - Sayad.dev | AI Automation
 
-**📧 Work Email:** khandokarsayad@gmail.com  
-**📧 Personal Email:** mdsadrhoman123@gmail.com  
-**💼 LinkedIn:** https://linkedin.com/in/khandokarsabbir  
-**🐙 GitHub:** https://github.com/mdsadrhoman123-stack
+**ðŸ“§ Work Email:** khandokarsayad@gmail.com  
+**ðŸ“§ Personal Email:** mdsadrhoman123@gmail.com  
+**ðŸ’¼ LinkedIn:** https://linkedin.com/in/khandokarsabbir  
+**ðŸ™ GitHub:** https://github.com/mdsadrhoman123-stack
 
-**🚀 Open to Work - Accepting New Automation Projects**
+**ðŸš€ Open to Work - Accepting New Automation Projects**
 
-**📩 Email me with your automation challenge - I'll tell you exactly 
+**ðŸ“© Email me with your automation challenge - I'll tell you exactly 
 which part I'd automate first, and which part I wouldn't.**
 
 ---
@@ -290,7 +290,7 @@ which part I'd automate first, and which part I wouldn't.**
 
 **Built by K MD SAYAD RAHMAN (Sayad.dev | AI Automation)**
 
-**📧 Contact:** khandokarsayad@gmail.com | mdsadrhoman123@gmail.com
+**ðŸ“§ Contact:** khandokarsayad@gmail.com | mdsadrhoman123@gmail.com
 
 Copyright (c) 2024 K MD SAYAD RAHMAN. All rights reserved. Portfolio use only.
 
