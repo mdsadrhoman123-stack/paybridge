@@ -1,298 +1,186 @@
-# Finance Teams: Automate Payment Reconciliation Without Revenue Loss
+<img src="assets/banner.svg" alt="PayBridge — Shopify → Stripe reconciliation" width="100%">
 
-**Client:** E-commerce Business | **Industry:** Fintech | **Delivered by:** K MD SAYAD RAHMAN (Sayad.dev | AI Automation)
+# PayBridge
 
-<!-- Professional Banner -->
-<img src="assets/banners/finance-banner.svg" alt="Payment Reconciliation Automation" style="width: 100%; max-width: 1200px; height: auto; border-radius: 10px; margin: 20px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+**Orders and payouts are matched continuously with fees and currency handled, and only genuine discrepancies interrupt a human.**
 
-<!-- Interactive Architecture Diagram -->
-[View Interactive Architecture Diagram](https://raw.githubusercontent.com/mdsadrhoman123-stack/paybridge/main/assets/diagrams/finance-interactive.html)
+![delivered to client](https://img.shields.io/badge/status-delivered%20to%20client-2F6B52?style=flat-square) ![sector](https://img.shields.io/badge/sector-E--commerce%20/%20payments-12151B?style=flat-square) ![built with](https://img.shields.io/badge/built%20with-n8n-12151B?style=flat-square) ![Workflow nodes](https://img.shields.io/badge/Workflow%20nodes-38-5B6472?style=flat-square)
 
----
-
-## Contents
-
-- [The Problem](#the-problem)
-- [The Solution](#the-solution)
-- [Architecture](#architecture)
-- [How It Works](#how-it-works)
-- [Key Metrics](#key-metrics)
-- [Before/After Comparison](#beforeafter-comparison)
-- [Impact Statement](#impact-statement)
-- [Non-functional Highlights](#non-functional-highlights)
-- [Design Decisions](#design-decisions)
-- [What I'd Improve](#what-id-improve)
-- [Roadmap](#roadmap)
-- [What I'm Not Publishing](#what-im-not-publishing)
-- [FAQ](#faq)
-- [Contact](#contact)
+| | |
+| :--- | :--- |
+| **Built for** | E-commerce business on Shopify + Stripe |
+| **Industry** | E-commerce finance |
+| **Status** | delivered to client |
+| **Role** | Designed, built and deployed end to end |
 
 ---
 
-## The Problem
+### On this page
 
-Finance teams often lose days every month manually cross-checking CSV exports from different platforms. This process is prone to human error and carries a high risk of missed revenue from overlooked chargebacks or failed payouts.
-
-**In practical terms:**
-- Manual CSV cross-checking = **days lost every month**
-- Human error risk = **potential revenue loss**
-- Currency complexity = **manual FX calculations**
-- Transaction fee variations = **difficult reconciliation**
-- No systematic audit trail = **compliance risk**
-
-**The cost:** Days of manual work plus risk of missed revenue from overlooked discrepancies.
+[The problem](#the-problem) · [What changed](#what-changed) · [How it works](#how-it-works) · [When it breaks](#when-it-breaks) · [The stack](#the-stack) · [Limitations](#honest-limitations) · [Read deeper](#read-deeper)
 
 ---
 
-## The Solution
+## The problem
 
-PayBridge is a high-integrity reconciliation engine that automatically matches Shopify transactions with Stripe payouts. It handles the complexities of currency exchange and transaction fees to ensure the books are always balanced.
+An e-commerce finance team was closing their books by hand every month — days of cross-referencing exported spreadsheets and manual lookups.
 
-**Core capabilities:**
-- **Idempotent Processing:** Guaranteed zero double-counting of transactions
-- **FX & Fee Normalization:** Automated calculation of net payouts across multiple currencies
-- **Tolerance Matching:** Intelligent detection of discrepancies vs. expected variance
-- **Append-only Ledger:** Permanent, immutable audit trail in PostgreSQL
-- **Self-Hosted Deployment:** Docker-based VPS deployment for data control
+The cost was not only the days. Partial refunds, currency conversion adjustments and the occasional failed payout are easy to miss in a manual process, so real revenue could go unaccounted for with nobody noticing until much later, if at all.
 
----
+Financial reconciliation has no tolerance for “close enough”. A job that is mostly accurate on money is worse than no automation, because it creates false confidence.
 
-## Architecture
+## What changed
+
+| | Before | After |
+| :--- | :--- | :--- |
+| **Month-end close** | Days of manual spreadsheet work | Runs continuously in the background |
+| **Discrepancy found** | Weeks later, if at all | Within hours of occurring |
+| **Alert volume** | Everything looked like a mismatch | Only genuine mismatches surface |
+| **Audit trail** | None | Append-only financial ledger |
+| **Where the data lives** | Third-party cloud tools | Self-hosted, client-controlled |
+
+<sub>Before/after describes the change in process, not benchmarked throughput. Where a number is not measured, it is not claimed.</sub>
+
+## How it works
+
+Scheduled, rate-limit-aware pulls from both APIs feed a matching engine with tolerance rules for expected variance. Everything lands in an append-only ledger that is safe to re-run, and only genuine mismatches raise an alert.
+
+<table>
+<tr>
+<td width="42" valign="top" align="center"><b>01</b></td><td valign="top"><b>Nothing to do</b><br>The job runs on a schedule. No one exports a CSV.</td>
+</tr>
+<tr>
+<td width="42" valign="top" align="center"><b>02</b></td><td valign="top"><b>Every order is matched</b><br>Order and payout are paired by ID and amount, with fees and currency applied.</td>
+</tr>
+<tr>
+<td width="42" valign="top" align="center"><b>03</b></td><td valign="top"><b>Expected variance is ignored</b><br>Fees and FX differences do not become alerts. That is the difference between a useful system and a noisy one.</td>
+</tr>
+<tr>
+<td width="42" valign="top" align="center"><b>04</b></td><td valign="top"><b>Real problems surface</b><br>A chargeback, a partial refund or a missing payout is held and flagged with both records attached.</td>
+</tr>
+<tr>
+<td width="42" valign="top" align="center"><b>05</b></td><td valign="top"><b>The ledger is permanent</b><br>Every state change is appended. Nothing is overwritten, so last month can always be re-read.</td>
+</tr>
+<tr>
+<td width="42" valign="top" align="center"><b>06</b></td><td valign="top"><b>Re-running is safe</b><br>If the job is run again it will not double-count. This requirement shaped the whole build.</td>
+</tr>
+</table>
+
+### How it flows
+
+<sub>What happens to the client's work, in the order they experience it. The internal build — node graph, execution order, prompts, thresholds — is deliberately not published.</sub>
 
 ```mermaid
-flowchart TD
-    classDef blue fill:#3498db,color:#fff
-    classDef green fill:#2ecc71,color:#fff
+flowchart LR
+    in(["Orders and payouts arrive"])
+    match["Matched, with fees and currency accounted for"]
+    chk{"A genuine discrepancy?"}
+    ok["Reconciled and recorded"]
+    hold["Held for finance to review"]
 
-    A[Shopify Orders]:::blue --> C[Ingestion Engine]:::green
-    B[Stripe Payouts]:::blue --> C:::green
-    
-    C --> D[Normalize FX + Fees]:::green
-    D --> E[Tolerance Matching Engine]:::green
-    
-    E --> F{Match Check}:::green
-    F -- Success --> G[Append-only Ledger]:::green
-    F -- Mismatch --> H[Discrepancy Alerts]:::blue
+    in --> match
+    match --> chk
+    chk --> ok
+    chk -.-> hold
+
+    classDef default fill:#F8F7F3,stroke:#12151B,stroke-width:1px,color:#12151B;
+    classDef ok fill:#2F6B52,stroke:#12151B,stroke-width:1px,color:#F5F4EF;
+    classDef bad fill:#FEE2E2,stroke:#DC2626,stroke-width:1.5px,color:#7F1D1D;
+    class ok ok;
+    class hold bad;
 ```
 
-**Data Flow:**
-1. **Ingest:** Shopify orders and Stripe payouts fetched via APIs
-2. **Normalize:** FX rates and transaction fees calculated and normalized
-3. **Match:** Tolerance-based matching engine compares transactions
-4. **Validate:** Expected variance vs. actual discrepancies identified
-5. **Record:** Matched transactions written to append-only ledger
-6. **Alert:** Discrepancies trigger immediate notification for review
-7. **Audit:** Permanent record maintained for compliance and review
+<details>
+<summary><b>What the shapes mean</b> — colour is not the only signal</summary>
 
----
-
-## How It Works
-
-### Step-by-Step Process:
-
-1. **Data Ingestion:** Shopify orders and Stripe payouts fetched via APIs
-2. **FX Normalization:** Currency exchange rates applied for multi-currency transactions
-3. **Fee Calculation:** Transaction fees calculated and normalized across platforms
-4. **Tolerance Matching:** Intelligent matching with acceptable variance thresholds
-5. **Discrepancy Detection:** Automated identification of unexpected differences
-6. **Ledger Update:** Matched transactions written to append-only PostgreSQL ledger
-7. **Alert Generation:** Discrepancies trigger immediate alerts for manual review
-8. **Audit Trail:** Permanent record maintained for compliance and historical analysis
-
-### Technology Stack:
-- **Orchestration:** n8n Workflow Automation (38 nodes)
-- **APIs:** Shopify API, Stripe API for data retrieval
-- **Database:** PostgreSQL for append-only ledger storage
-- **Deployment:** Docker / VPS for self-hosted deployment
-- **System Type:** Payment Reconciliation Automation System
-
----
-
-## Key Metrics
-
-| Metric | Value |
+| Shape | Means |
 | :--- | :--- |
-| Workflow Nodes | 38 |
-| Integrity | 100% Idempotent |
-| Ledger Type | Append-only |
-| Deployment | Self-hosted Docker |
+| **rounded** | Where the client's process starts |
+| **box** | Something the system does |
+| **diamond** | A decision point |
+| **slanted** | A person has to act |
+| **green box** | The good outcome |
+| **red box** | Failure path — held, escalated or alerted |
+
+Red appears in exactly one role across every repo in this portfolio: where failure goes. Nowhere else. If you see red, something is being held, escalated or alerted.
+</details>
+
+> **Walk it interactively** — [open the demo](https://mdsadrhoman123-stack.github.io/paybridge/) and press **Break it** to watch the failure path light up. Source: [`docs/index.html`](docs/index.html)
+
+## When it breaks
+
+Most automation portfolios show you the happy path. The happy path is the easy half. This is the half that decides whether a system survives contact with a real business.
+
+| What goes wrong | How it is detected | What the system does | Who finds out |
+| :--- | :--- | :--- | :--- |
+| **Job re-run after a partial failure** | Idempotency key per transaction | Existing ledger entries are not written twice | Nothing to report — by design |
+| **Shopify or Stripe rate-limits the pull** | API response code | Backoff and retry rather than a silent skip | Alert only if retries are exhausted |
+| **Amounts differ by fees or FX** | Tolerance rules | Treated as expected variance, not flagged | Nobody — this is what avoids alert fatigue |
+| **Chargeback or partial refund** | Match logic | Held and flagged as a genuine discrepancy | Finance team alerted with both records |
+| **Payout missing entirely** | Unmatched order after the window | Held for review, never auto-reconciled | Finance team alerted |
+| **Anything unanticipated** | Global error trigger | Halt before writing to the ledger | Alert with execution ID |
+
+The default on an unhandled condition is to **stop and tell someone** — never to continue on a guess. A silent success is the failure mode that costs the most, because nobody goes looking for it.
+
+## The stack
+
+| Component | Why this one |
+| :--- | :--- |
+| **n8n** | Self-hosted — no financial data through a third-party automation cloud |
+| **Shopify API** | Order side of the match |
+| **Stripe API** | Payout side of the match |
+| **PostgreSQL** | Append-only ledger: states are recorded, never overwritten |
+| **Docker on a self-hosted VPS** | Reproducible deployment under the client's own control |
+
+### Counted, not estimated
+
+| | |
+| :--- | :--- |
+| Workflow nodes | **38** |
+| Ledger writes | **Append-only** |
+| Safe to re-run | **Idempotent** |
+
+<sub>These are counts from the built system — nodes, stages, versions, gates. No efficiency percentages are published here without a stated measurement method.</sub>
+
+## Honest limitations
+
+Every design decision costs something. These are the trade-offs in this build, stated by the person who made them.
+
+- Built for one Shopify store against one Stripe account. Multiple stores would need a tenant key on every ledger row.
+- Tolerance rules for fees and FX are configured, not learned. A new payment method or a fee change needs the rule updated.
+- Matching is by ID and amount within a window. Deliberately conservative — an unmatched record is held rather than guessed at.
+
+## What is not in this repo
+
+- **Client data.** None, in any form. Not anonymised, not sampled.
+- **Credentials and endpoints.** Never committed. See [`NOTICE.md`](NOTICE.md).
+- **The workflow itself.** No exports, no node graph, no execution order, no prompts, no scoring thresholds, no integration wiring — not sanitised, not partial, not in a screenshot. That is the build, and the build belongs to the engagement that paid for it.
+
+This repository documents *how the problem was thought about* — the failure paths, the trade-offs, the reasoning. That is what tells you whether to hire someone. A copy of the wiring would not.
+
+This is a portfolio repository documenting delivered work. It is not a product you can clone and run against your own accounts.
+
+## Read deeper
+
+| | |
+| :--- | :--- |
+| [01 · The problem](docs/01-problem.md) | The situation before, in full |
+| [02 · The client journey](docs/02-journey.md) | Step by step, from their side |
+| [03 · Architecture](docs/03-architecture.md) | Diagrams and the reasoning |
+| [04 · Failure handling](docs/04-failure-handling.md) | Every path, and where it lands |
+| [05 · The stack](docs/05-stack.md) | What was chosen and what was rejected |
+| [06 · Results](docs/06-results.md) | What is measured and what is not |
+| [07 · Limitations](docs/07-limitations.md) | The trade-offs, in detail |
 
 ---
 
-## Before/After Comparison
+<img src="assets/cta.svg" alt="If a process depends on someone noticing when it breaks, that is the problem I work on." width="100%">
 
-### BEFORE (Manual Reconciliation - High Risk)
-```
-[Shopify CSV Export] 
-    ↓ (manual download)
-[Stripe CSV Export] 
-    ↓ (manual download)
-[Manual Cross-Check] 
-    ↓ (error-prone)
-[FX Calculations] 
-    ↓ (complex manual work)
-[Fee Reconciliation] 
-    ↓
-= **Days of work, high error risk, missed revenue possible** ❌
-```
+### Tell me what the process is
 
-### AFTER (Automated Reconciliation - Accurate)
-```
-[Shopify API Data] 
-    ↓ (automated fetch)
-[Stripe API Data] 
-    ↓ (automated fetch)
-[FX Normalization] 
-    ↓ (automated calculation)
-[Tolerance Matching] 
-    ↓ (intelligent comparison)
-[Discrepancy Detection] 
-    ↓ (automated alerts)
-[Append-only Ledger] 
-    ↓
-= **Instant reconciliation, zero double-counting, revenue protected** ✅
-```
+I will tell you honestly whether automating it is worth your money — including when the answer is no.
 
-**The difference:** Automated financial reconciliation with guaranteed integrity and immediate discrepancy detection.
+**K MD SAYAD RAHMAN** — AI Automation Engineer  
+n8n · AI agents · production reliability  
+[LinkedIn](https://www.linkedin.com/in/khandokarsayad) · [More systems](https://github.com/mdsadrhoman123-stack)
 
----
-
-## Impact Statement
-
-**Business Value Delivered:**
-- **100% idempotent processing** eliminates double-counting risk
-- **Automated FX normalization** handles multi-currency complexity
-- **Tolerance-based matching** distinguishes real discrepancies from expected variance
-- **Append-only ledger** provides permanent audit trail for compliance
-- **Self-hosted deployment** ensures data control and security
-
-**Client ROI:** Days of monthly manual work eliminated with zero revenue loss from reconciliation errors.
-
----
-
-## Non-functional Highlights
-
-**Reliability & Error Handling:**
-- **Idempotent Processing:** Guaranteed zero double-counting of transactions
-- **Tolerance-Based Matching:** Distinguishes expected variance from real discrepancies
-- **Append-Only Ledger:** Permanent, immutable audit trail
-- **Explicit Error Handling:** Failed reconciliations trigger immediate alerts
-- **Production-Grade:** Built for financial data where accuracy is non-negotiable
-
-**Performance:**
-- **38-node workflow** handles complex reconciliation logic
-- **Automated processing** eliminates days of manual work
-- **Scalable architecture** handles increased transaction volumes
-
-**Financial Integrity:**
-- **Zero Double-Counting:** Idempotent design prevents revenue errors
-- **Multi-Currency Support:** Automated FX normalization
-- **Fee Accuracy:** Transaction fee calculations included in matching
-- **Compliance Ready:** Append-only ledger for audit requirements
-
----
-
-## Design Decisions
-
-**Why This Architecture:**
-- **Idempotent Design:** Financial systems cannot tolerate double-counting
-- **Tolerance Matching:** Real-world variance vs. actual discrepancies
-- **Append-Only Ledger:** Immutable audit trail for compliance
-- **Self-Hosted:** Financial data requires full control
-- **API Integration:** Direct API access vs. CSV exports for real-time data
-
-**Trade-offs:**
-- **Complexity vs Accuracy:** 38 nodes handle edge cases for financial precision
-- **Tolerance Settings:** Balance between false positives and missed discrepancies
-- **Self-Hosting vs SaaS:** Data control vs. convenience for financial systems
-
----
-
-## What I'd Improve
-
-With more time/budget:
-- **Advanced Analytics:** Revenue trend analysis and forecasting
-- **Multi-Platform:** Expand beyond Shopify/Stripe to other platforms
-- **ML Anomaly Detection:** Machine learning for discrepancy pattern recognition
-- **Real-Time Dashboard:** Live reconciliation monitoring
-- **Custom Reporting:** Automated financial report generation
-
----
-
-## Roadmap
-
-- [ ] **v2.0:** Advanced analytics and revenue forecasting
-- [ ] **Multi-Platform:** Additional payment platform integrations
-- [ ] **ML Detection:** Machine learning for anomaly detection
-- [ ] **Real-Time Dashboard:** Live monitoring interface
-- [ ] **Custom Reports:** Automated financial reporting
-
----
-
-## What I'm Not Publishing
-
-For client confidentiality and IP protection, I've deliberately omitted:
-
-- Financial matching logic and workflow exports (standard for money systems)
-- Live API credentials and production environment secrets
-- Specific fee models and custom tolerance thresholds
-- Client financial data and transaction history
-- Proprietary reconciliation algorithms
-- Integration authentication details
-
-**This is a real client system for financial reconciliation. Financial confidentiality applies.**
-
----
-
-## FAQ
-
-**Q: How does idempotent processing work?**  
-A: Each transaction is uniquely identified; re-processing cannot create duplicate entries.
-
-**Q: What tolerance levels are used for matching?**  
-A: Configurable tolerance thresholds distinguish expected variance from real discrepancies.
-
-**Q: Can this handle multi-currency transactions?**  
-A: Yes, automated FX normalization handles multiple currencies and exchange rates.
-
-**Q: Is the ledger truly append-only?**  
-A: Yes, PostgreSQL ledger is designed as append-only for immutable audit trail.
-
----
-
-## Contact
-
-**K MD SAYAD RAHMAN** - Sayad.dev | AI Automation
-
-**Work Email:** khandokarsayad@gmail.com  
-**Personal Email:** mdsadrhoman123@gmail.com  
-**LinkedIn:** https://linkedin.com/in/khandokarsabbir  
-**GitHub:** https://github.com/mdsadrhoman123-stack
-
-**Open to Work - Accepting New Automation Projects**
-
-**Email me with your automation challenge - I'll tell you exactly 
-which part I'd automate first, and which part I wouldn't.**
-
----
-
-## See My Other Automation Systems
-
-- [Real Estate AI Automation](../distressed-property-detection) - Property deal detection
-- [M&A Deal-Flow Automation](../edugrow-ma-platform) - M&A advisory systems
-- [Healthcare Document Automation](../medical-document-automation) - Medical records processing
-- [E-commerce Review Automation](../review-outreach-pipeline) - Customer review generation
-
----
-
-<div align="center">
-
-**Built by K MD SAYAD RAHMAN (Sayad.dev | AI Automation)**
-
-**Contact:** khandokarsayad@gmail.com | mdsadrhoman123@gmail.com
-
-Copyright (c) 2024 K MD SAYAD RAHMAN. All rights reserved. Portfolio use only.
-
-*[n8n](https://n8n.io) | [Shopify API](https://shopify.com) | [Financial Automation](https://linkedin.com/in/khandokarsabbir)*
-
-</div>
