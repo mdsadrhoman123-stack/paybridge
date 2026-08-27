@@ -1,6 +1,6 @@
-# 02 · The client journey
+# 02 · The journey
 
-What this looks like from the outside, for **E-commerce business on Shopify + Stripe**.
+What this looks like from the outside, for **E-commerce businesses on Shopify + Stripe**.
 
 ---
 

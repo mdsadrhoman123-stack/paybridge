@@ -1,6 +1,6 @@
 # 01 · The problem
 
-**PayBridge** — E-commerce business on Shopify + Stripe
+**PayBridge** — the problem, as E-commerce businesses on Shopify + Stripe describe it
 
 ---
 
@@ -22,4 +22,4 @@ Scheduled, rate-limit-aware pulls from both APIs feed a matching engine with tol
 
 ---
 
-[← README](../README.md) · [02 · The client journey →](02-journey.md)
+[← README](../README.md) · [02 · The journey →](02-journey.md)

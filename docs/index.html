@@ -29,6 +29,12 @@ header.hero{background:var(--ink);color:#F5F4EF;padding:76px 0 68px;
 header.hero h1{font-size:clamp(38px,6vw,64px);line-height:1.03;margin:0 0 20px}
 header.hero p.promise{font-size:19px;line-height:1.55;color:#C6CFDB;
   max-width:60ch;margin:0 0 30px}
+/* The demo is a single file — someone may well open it with no README in
+   sight, so the provenance has to travel with it. */
+header.hero p.prov{font-size:14px;line-height:1.62;color:#8A94A3;
+  max-width:66ch;margin:24px 0 0;border-left:2px solid #2E3542;
+  padding-left:14px}
+header.hero p.prov b{color:#C6CFDB}
 .meta{display:flex;flex-wrap:wrap;gap:10px}
 .pill{font-size:12px;letter-spacing:.4px;padding:6px 12px;border-radius:999px;
   border:1px solid #2E3542;color:#A9B3C1}
@@ -135,10 +141,15 @@ a{color:var(--green)}
     <h1>PayBridge</h1>
     <p class="promise">Orders and payouts are matched continuously with fees and currency handled, and only genuine discrepancies interrupt a human.</p>
     <div class="meta">
-      <span class="pill ok">delivered to client</span>
+      <span class="pill ok">running on my own n8n</span>
       <span class="pill">E-commerce / payments</span>
-      <span class="pill">Built for E-commerce business on Shopify + Stripe</span>
+      <span class="pill">For E-commerce businesses on Shopify + Stripe</span>
+      <span class="pill">Ready to deploy</span>
     </div>
+    <p class="prov">Built from a real brief — businesses in this sector post
+    this problem publicly, in their own words, and I built a system for the
+    problem exactly as stated. It is production-grade and runs on my own infrastructure.
+    <b>It has not been sold or deployed into a customer's business: it is available, not delivered.</b></p>
   </div>
 </header>
 
@@ -219,7 +230,7 @@ a{color:var(--green)}
 </footer>
 
 <script>
-var DATA = {"nodes": [{"id": "in", "label": "Orders and payouts arrive", "kind": "trigger"}, {"id": "match", "label": "Matched, with fees and currency accounted for", "kind": "step"}, {"id": "chk", "label": "A genuine discrepancy?", "kind": "logic"}, {"id": "ok", "label": "Reconciled and recorded", "kind": "success"}, {"id": "hold", "label": "Held for finance to review", "kind": "fail"}], "edges": [{"a": "in", "b": "match"}, {"a": "match", "b": "chk"}, {"a": "chk", "b": "ok"}, {"a": "chk", "b": "hold"}], "fails": [{"what": "Job re-run after a partial failure", "detect": "Idempotency key per transaction", "does": "Existing ledger entries are not written twice", "who": "Nothing to report — by design"}, {"what": "Shopify or Stripe rate-limits the pull", "detect": "API response code", "does": "Backoff and retry rather than a silent skip", "who": "Alert only if retries are exhausted"}, {"what": "Amounts differ by fees or FX", "detect": "Tolerance rules", "does": "Treated as expected variance, not flagged", "who": "Nobody — this is what avoids alert fatigue"}, {"what": "Chargeback or partial refund", "detect": "Match logic", "does": "Held and flagged as a genuine discrepancy", "who": "Finance team alerted with both records"}, {"what": "Payout missing entirely", "detect": "Unmatched order after the window", "does": "Held for review, never auto-reconciled", "who": "Finance team alerted"}, {"what": "Anything unanticipated", "detect": "Global error trigger", "does": "Halt before writing to the ledger", "who": "Alert with execution ID"}], "journey": [{"h": "Nothing to do", "b": "The job runs on a schedule. No one exports a CSV."}, {"h": "Every order is matched", "b": "Order and payout are paired by ID and amount, with fees and currency applied."}, {"h": "Expected variance is ignored", "b": "Fees and FX differences do not become alerts. That is the difference between a useful system and a noisy one."}, {"h": "Real problems surface", "b": "A chargeback, a partial refund or a missing payout is held and flagged with both records attached."}, {"h": "The ledger is permanent", "b": "Every state change is appended. Nothing is overwritten, so last month can always be re-read."}, {"h": "Re-running is safe", "b": "If the job is run again it will not double-count. This requirement shaped the whole build."}], "name": "PayBridge", "eyebrow": "Shopify → Stripe reconciliation", "promise": "Orders and payouts are matched continuously with fees and currency handled, and only genuine discrepancies interrupt a human.", "client": "E-commerce business on Shopify + Stripe", "status": "delivered to client", "metrics": [["Workflow nodes", "38"], ["Ledger writes", "Append-only"], ["Safe to re-run", "Idempotent"]]};
+var DATA = {"nodes": [{"id": "in", "label": "Orders and payouts arrive", "kind": "trigger"}, {"id": "match", "label": "Matched, with fees and currency accounted for", "kind": "step"}, {"id": "chk", "label": "A genuine discrepancy?", "kind": "logic"}, {"id": "ok", "label": "Reconciled and recorded", "kind": "success"}, {"id": "hold", "label": "Held for finance to review", "kind": "fail"}], "edges": [{"a": "in", "b": "match"}, {"a": "match", "b": "chk"}, {"a": "chk", "b": "ok"}, {"a": "chk", "b": "hold"}], "fails": [{"what": "Job re-run after a partial failure", "detect": "Idempotency key per transaction", "does": "Existing ledger entries are not written twice", "who": "Nothing to report — by design"}, {"what": "Shopify or Stripe rate-limits the pull", "detect": "API response code", "does": "Backoff and retry rather than a silent skip", "who": "Alert only if retries are exhausted"}, {"what": "Amounts differ by fees or FX", "detect": "Tolerance rules", "does": "Treated as expected variance, not flagged", "who": "Nobody — this is what avoids alert fatigue"}, {"what": "Chargeback or partial refund", "detect": "Match logic", "does": "Held and flagged as a genuine discrepancy", "who": "Finance team alerted with both records"}, {"what": "Payout missing entirely", "detect": "Unmatched order after the window", "does": "Held for review, never auto-reconciled", "who": "Finance team alerted"}, {"what": "Anything unanticipated", "detect": "Global error trigger", "does": "Halt before writing to the ledger", "who": "Alert with execution ID"}], "journey": [{"h": "Nothing to do", "b": "The job runs on a schedule. No one exports a CSV."}, {"h": "Every order is matched", "b": "Order and payout are paired by ID and amount, with fees and currency applied."}, {"h": "Expected variance is ignored", "b": "Fees and FX differences do not become alerts. That is the difference between a useful system and a noisy one."}, {"h": "Real problems surface", "b": "A chargeback, a partial refund or a missing payout is held and flagged with both records attached."}, {"h": "The ledger is permanent", "b": "Every state change is appended. Nothing is overwritten, so last month can always be re-read."}, {"h": "Re-running is safe", "b": "If the job is run again it will not double-count. This requirement shaped the whole build."}], "name": "PayBridge", "eyebrow": "Shopify → Stripe reconciliation", "promise": "Orders and payouts are matched continuously with fees and currency handled, and only genuine discrepancies interrupt a human.", "audience": "E-commerce businesses on Shopify + Stripe", "status": "running on my own n8n", "metrics": [["Workflow nodes", "38"], ["Ledger writes", "Append-only"], ["Safe to re-run", "Idempotent"]]};
 
 var flow = document.getElementById('flow');
 DATA.nodes.forEach(function(n, i){
