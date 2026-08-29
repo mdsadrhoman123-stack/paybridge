@@ -23,7 +23,7 @@
 
 ### On this page
 
-[The problem](#the-problem) · [What changed](#what-changed) · [How it works](#how-it-works) · [When it breaks](#when-it-breaks) · [The stack](#the-stack) · [Limitations](#honest-limitations) · [What is here](#what-is-in-this-repository) · [Read deeper](#read-deeper)
+[The problem](#the-problem) · [What changed](#what-changed) · [How it works](#how-it-works) · [The shape of it](#the-shape-of-the-system) · [When it breaks](#when-it-breaks) · [Why this way](#why-it-is-built-this-way) · [Limitations](#honest-limitations) · [What is here](#what-is-in-this-repository) · [Read deeper](#read-deeper)
 
 ---
 
@@ -113,6 +113,47 @@ Red appears in exactly one role across every repo in this portfolio: where failu
 
 > **Walk it interactively** — [`docs/index.html`](docs/index.html) is a single self-contained page. Download it, open it in any browser, and press **Break it** to watch the failure path light up. Nothing to install, no network calls.
 
+## The shape of the system
+
+Parts and the role each one plays. Not the wiring — no execution order, no prompt text, no thresholds. That is a deliberate line, and the last branch of the tree names exactly what sits on the other side of it.
+
+```text
+PayBridge — the running system
+│
+├── Interfaces ...................... the systems it talks to
+│   ├── Shopify API ................. Order side of the match
+│   └── Stripe API .................. Payout side of the match
+│
+├── Memory .......................... what is remembered, and for how long
+│   └── PostgreSQL .................. Append-only ledger: states are recorded, never overwritten
+│
+├── Ground .......................... what the whole thing runs on
+│   ├── n8n ......................... Self-hosted — no financial data through a third-party automation cloud
+│   └── Docker on a self-hosted VPS . Reproducible deployment under the client's own control
+│
+├── Failure design .................. 6 paths, designed before the features
+│   ├── detected by ................. an error output, a timer, or a failed connection
+│   ├── handled by .................. falling back, holding, or halting — never guessing
+│   └── announced to ................ a named person, with the reason attached
+│
+└── Not in this repository .......... the part that would let you skip the thinking
+    ├── the node graph .............. which part runs after which, and on what condition
+    ├── the thresholds .............. what counts as urgent, late, at capacity, a match
+    └── the credentials ............. never committed, in any form, at any point
+```
+
+Read it as a set of decisions rather than a parts list. Every part is there because a specific failure or a specific constraint put it there, and the two sections below are the same story told twice: **When it breaks** is what each part is defending against, and **Honest limitations** is what it costs to have chosen that part and not another.
+
+### Counted, not estimated
+
+| | |
+| :--- | :--- |
+| Workflow nodes | **38** |
+| Ledger writes | **Append-only** |
+| Safe to re-run | **Idempotent** |
+
+<sub>These are counts from the built system — nodes, stages, versions, gates. No efficiency percentages are published here without a stated measurement method.</sub>
+
 ## When it breaks
 
 Most automation portfolios show you the happy path. The happy path is the easy half. This is the half that decides whether a system survives contact with a real business.
@@ -128,25 +169,44 @@ Most automation portfolios show you the happy path. The happy path is the easy h
 
 The default on an unhandled condition is to **stop and tell someone** — never to continue on a guess. A silent success is the failure mode that costs the most, because nobody goes looking for it.
 
-## The stack
+## Why it is built this way
 
-| Component | Why this one |
-| :--- | :--- |
-| **n8n** | Self-hosted — no financial data through a third-party automation cloud |
-| **Shopify API** | Order side of the match |
-| **Stripe API** | Payout side of the match |
-| **PostgreSQL** | Append-only ledger: states are recorded, never overwritten |
-| **Docker on a self-hosted VPS** | Reproducible deployment under the client's own control |
+Three decisions, each with the option that was turned down and the price of turning it down. A choice with no cost attached to it was not a choice — it was a default, and defaults are not worth reading about.
 
-### Counted, not estimated
+<details open>
+<summary><b>Why the ledger is append-only</b></summary>
 
-| | |
-| :--- | :--- |
-| Workflow nodes | **38** |
-| Ledger writes | **Append-only** |
-| Safe to re-run | **Idempotent** |
+**What it does.** States are recorded, never overwritten, so the run is safe to repeat and yesterday's belief about a record survives today's correction.
 
-<sub>These are counts from the built system — nodes, stages, versions, gates. No efficiency percentages are published here without a stated measurement method.</sub>
+**What was turned down.** Updating the row in place. A smaller store and a simpler query — and an overwrite destroys the evidence of what was believed before it, which in a financial process is the thing an auditor asks for.
+
+**What that costs.** The store grows, and every read has to ask for the latest state rather than selecting one current row.
+
+</details>
+
+<details>
+<summary><b>Why an unmatched record is held rather than guessed at</b></summary>
+
+**What it does.** Matching is by ID and amount inside a window. Anything outside it is held for a person.
+
+**What was turned down.** Fuzzy matching, to push the automatic rate higher. It would clear more records per run, and a wrong match on money produces false confidence — which is worse than no automation, because nobody goes looking for it.
+
+**What that costs.** A real queue of held records that somebody has to work through. Tolerance rules for fees and FX are configured rather than learned, so a new payment method or a fee change needs the rule updated by hand.
+
+</details>
+
+<details>
+<summary><b>Why it is self-hosted rather than on an automation cloud</b></summary>
+
+**What it does.** n8n in Docker on a VPS the client controls. No financial data crosses a third-party automation platform.
+
+**What was turned down.** A hosted SaaS. Far less to operate — and order and payout data then transits a vendor, and the failure handling can only ever be as good as what that vendor chooses to expose.
+
+**What that costs.** The client owns uptime, backups and upgrades. Built for one Shopify store against one Stripe account; multiple stores would need a tenant key on every ledger row.
+
+</details>
+
+Every cost above also appears in **Honest limitations** below. It is there twice on purpose: once as the reasoning, once as the consequence, so neither can be quietly dropped from the other.
 
 ## Honest limitations
 
@@ -158,36 +218,40 @@ Every design decision costs something. These are the trade-offs in this build, s
 
 ## What is in this repository
 
+Every file, and the question it answers. Same layout in all eleven repositories in this portfolio, so the second one you open needs no orientation at all.
+
 ```text
 paybridge/
-├── README.md                      ← you are here
-├── SECURITY.md                    # how to report something that should not be public
-├── NOTICE.md                      # what is withheld, and why
-├── LICENSE                        # covers the documentation, not a software grant
+├── README.md ....................... ← you are here
+├── SECURITY.md ..................... how to report something that should not be public
+├── NOTICE.md ....................... what is withheld, and why
+├── LICENSE ......................... covers the documentation, not a software grant
 │
-├── docs/
-│   ├── index.html                 # the interactive demo — one file, opens with no network
-│   ├── 01-problem.md              # the situation before, in full
-│   ├── 02-journey.md              # step by step, from their side
-│   ├── 03-architecture.md         # the diagrams and the reasoning
-│   ├── 04-failure-handling.md     # every failure path, and where it lands
-│   ├── 05-stack.md                # what was chosen, and what was rejected
-│   ├── 06-results.md              # what is measured, and what is not
-│   └── 07-limitations.md          # the trade-offs, in detail
+├── docs/ ........................... the long form — read in order or not at all
+│   ├── index.html .................. the interactive demo, one file, no network
+│   ├── 01-problem.md ............... the situation before, in full
+│   ├── 02-journey.md ............... step by step, from their side
+│   ├── 03-architecture.md .......... the diagrams, and why they are shaped that way
+│   ├── 04-failure-handling.md ...... every failure path, and where it lands
+│   ├── 05-stack.md ................. each choice, the option turned down, the cost
+│   ├── 06-results.md ............... what is measured, and what is deliberately not
+│   └── 07-limitations.md ........... the trade-offs, in detail
 │
-├── diagrams/
-│   ├── pipeline-lr.mmd            # the client-level flow, left to right
-│   └── pipeline-tb.mmd            # the same flow, top to bottom
+├── diagrams/ ....................... source, so the flow can be re-rendered
+│   ├── pipeline-lr.mmd ............. the client-level flow, left to right
+│   └── pipeline-tb.mmd ............. the same flow, top to bottom
 │
-├── assets/                        # banner and closing card, SVG, no CDN
+├── assets/ ......................... SVG only — nothing loaded from a CDN
+│   ├── banner.svg .................. the header on this page
+│   └── cta.svg ..................... the closing card
 │
-├── workflows/
-│   └── README.md                  # empty on purpose — see below
+├── workflows/ ...................... empty on purpose — see below
+│   └── README.md ................... why it is empty, in writing
 │
-└── .github/
-    ├── honesty-check.py           # the claim linter behind the badge
+└── .github/ ........................ the badge at the top of this page
+    ├── honesty-check.py ............ the claim linter it runs
     └── workflows/
-        └── honesty-check.yml      # runs it on every push
+        └── honesty-check.yml ....... runs it on every push
 ```
 
 There is no `src/` in that tree, and no `workflows/*.json`. That is not an omission — it is the design, and the next section says exactly what is being withheld and why.
